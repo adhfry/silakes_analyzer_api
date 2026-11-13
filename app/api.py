@@ -14,6 +14,7 @@ from werkzeug.security import check_password_hash
 from .auth import buat_token, galat, wajib_masuk
 from .ekstensi import db
 from .layanan import model_deteksi, rujukan
+from .layanan.petunjuk import MEDIAN_PROFIL_NORMAL, petunjuk_pola
 from .models import (KEPUTUSAN, PANEL, STATUS_DETEKSI, HasilDeteksi, LogSinkronisasi, Pengguna, ProfilHasil,
                      TindakLanjut)
 
@@ -158,7 +159,8 @@ def detail_deteksi(id_deteksi):
                     'status_deteksi': h.status_deteksi, 'waktu_deteksi': h.waktu_deteksi.isoformat(timespec='seconds'),
                     'model': {'versi': h.model.versi, 'ambang': float(h.model.ambang)},
                     'profil': p.ke_dict(), 'panel': panel, 'kontribusi': kontribusi,
-                    'nilai_dasar': nilai_dasar, 'keluaran_log_odds': keluaran})
+                    'nilai_dasar': nilai_dasar, 'keluaran_log_odds': keluaran,
+                    'median_profil_normal': MEDIAN_PROFIL_NORMAL, 'petunjuk': petunjuk_pola(kontribusi)})
 
 
 @bp.post('/deteksi/<int:id_deteksi>/tindak-lanjut')

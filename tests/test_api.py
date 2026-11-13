@@ -61,6 +61,8 @@ def test_daftar_detail_dan_tindak_lanjut(klien):
     # Sifat aditif SHAP: nilai dasar + jumlah kontribusi = keluaran log-odds; sigmoid-nya = peluang.
     import math
     assert abs(1 / (1 + math.exp(-detail['keluaran_log_odds'])) - detail['peluang_anomali']) < 2e-3
+    assert detail['petunjuk']['pola'] in ('pengenceran', 'tertukar')
+    assert set(detail['median_profil_normal']) == {'kolesterol_total', 'hdl', 'ldl', 'trigliserida', 'urea', 'kreatinin'}
 
     assert klien.post('/api/deteksi/%d/tindak-lanjut' % id_deteksi, headers=h,
                       json={'keputusan': 'asal'}).status_code == 400
@@ -257,3 +259,17 @@ def test_foto_akun_hanya_untuk_pemilik_dan_admin(app, klien, tmp_path):
     assert klien.get('/api/pengguna/%d/foto' % id_petugas, headers=ha).status_code == 200
     assert klien.get('/api/pengguna/%d/foto' % id_admin, headers=ha).status_code == 404
     assert klien.get('/api/pengguna/%d/foto' % id_petugas).status_code == 401
+
+
+def test_petunjuk_pola_pengenceran_dan_tertukar():
+    from app.layanan.petunjuk import petunjuk_pola
+    # profil dari uji lapangan 14 November 2026: lipid jauh di bawah median profil normal
+    k = [('trigliserida', 54, 0.78), ('kolesterol_total', 134, 0.55), ('ldl', 79, 0.10), ('hdl', 44, 0.08),
+         ('jenis_kelamin', 0, 0.01), ('urea', 22, -0.05), ('umur', 44, -0.09), ('kreatinin', 0.9, -0.37)]
+    p = petunjuk_pola([{'nama_fitur': n, 'nilai_fitur': v, 'nilai_shap': s} for n, v, s in k])
+    assert p['pola'] == 'pengenceran'
+    assert p['parameter_rendah'] == ['trigliserida', 'kolesterol_total', 'ldl', 'hdl']
+    # dorongan berasal dari nilai di atas median: bukan pola pengenceran
+    k = [('kolesterol_total', 280, 0.6), ('hdl', 90, 0.3), ('kreatinin', 0.7, 0.1), ('umur', 60, -0.2)]
+    p = petunjuk_pola([{'nama_fitur': n, 'nilai_fitur': v, 'nilai_shap': s} for n, v, s in k])
+    assert p['pola'] == 'tertukar' and p['parameter_rendah'] == ['kreatinin']
