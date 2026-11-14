@@ -24,9 +24,8 @@ def _muat(path, waktu_ubah):
     m = xgb.XGBClassifier()
     m.load_model(path)
     penjelas = shap.TreeExplainer(m)
-    # expected_value awal hanya taksiran dari base_score. Nilai dasar yang memenuhi sifat aditif
-    # (phi_0 + jumlah phi_j = log-odds) baru terisi setelah shap_values dipanggil, dan nilainya sama
-    # untuk masukan apa pun. Satu baris nol dipakai agar nilai dasar benar sejak model dimuat.
+    # expected_value baru memenuhi phi_0 + jumlah phi_j = log-odds setelah shap_values dipanggil sekali,
+    # dan nilainya sama untuk masukan apa pun, sehingga cukup dipanggil dengan satu baris nol.
     penjelas.shap_values(pd.DataFrame([[0.0] * len(FITUR)], columns=FITUR))
     return m, penjelas
 
